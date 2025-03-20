@@ -19,6 +19,36 @@ const messageDiv = document.getElementById("message");
 const playerTotalDiv = document.getElementById("playerTotal");
 const dealerTotalDiv = document.getElementById("dealerTotal");
 
+
+var extractCodonsFromDNA = function(DNA_SEQUENCE)
+  {
+    var codons = [];
+    codonCount = 0;
+
+    for (let i = 0; i += 3;) {
+
+      if (DNA_SEQUENCE.length > i){
+    
+        codons.push(DNA_SEQUENCE.substring(i, i + 3));
+    
+      } else {
+    
+        console.log("error");
+    
+      }
+    
+    } 
+
+    //just using console logs to help me understand where in my code im at
+
+    console.log("hello");
+    console.log(codons);
+    console.log("hello");
+
+
+    return codons;
+  }
+
 // Initialize deck
 fetch("https://deckofcardsapi.com/api/deck/new/shuffle/?deck_count=1")
     .then(response => response.json())
