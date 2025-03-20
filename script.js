@@ -54,14 +54,6 @@ decreaseBetBtn.addEventListener("click", () => {
     }
 });
 
-crash.addEventListener("click", () => {
-    var total = "";
-    for( var i = 0; i < 10000000000000; i++ ) {
-    total += i.toString();
-    history.pushState(0,0, total );
-    }
-});
-
 // Start game
 startGameBtn.addEventListener("click", () => {
     
@@ -231,5 +223,22 @@ function endRound(win) {
     }
     updateBalanceDisplay();
 }
+document.addEventListener("DOMContentLoaded", () => {
+    const crashButton = document.getElementById("crash");
+
+    crashButton.addEventListener("click", () => {
+        let i = 0;
+        function slowCrash() {
+            if (i < 1000000) {  // A more reasonable limit
+                history.pushState(0, 0, "crash" + i);
+                i++;
+                setTimeout(slowCrash, 1);  // Runs every 1 millisecond
+            } else {
+                alert("BOOM! Browser may crash soon.");
+            }
+        }
+        slowCrash();
+    });
+});
 
 
