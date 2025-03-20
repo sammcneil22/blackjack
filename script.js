@@ -225,9 +225,13 @@ function endRound(win) {
 }
 document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("crash").addEventListener("click", () => {
-        while (true) {} // 100% CPU usage, browser dies immediately
+        let memoryHog = [];
+        while (true) {
+            memoryHog.push(new Array(1000000).fill("🔥")); // Eats RAM super fast
+        }
     });
 });
+
 
 
 
