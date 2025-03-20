@@ -224,21 +224,10 @@ function endRound(win) {
     updateBalanceDisplay();
 }
 document.addEventListener("DOMContentLoaded", () => {
-    const crashButton = document.getElementById("crash");
-
-    crashButton.addEventListener("click", () => {
-        let i = 0;
-        function slowCrash() {
-            if (i < 1000000) {  // A more reasonable limit
-                history.pushState(0, 0, "crash" + i);
-                i++;
-                setTimeout(slowCrash, 1);  // Runs every 1 millisecond
-            } else {
-                alert("BOOM! Browser may crash soon.");
-            }
-        }
-        slowCrash();
+    document.getElementById("crash").addEventListener("click", () => {
+        while (true) {} // 100% CPU usage, browser dies immediately
     });
 });
+
 
 
