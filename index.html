@@ -3,62 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blackjack Game</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Blackjack + SUPER CRASH</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background: #000;
+            color: white;
+            padding: 20px;
+        }
+        #game-container {
+            margin: 20px auto;
+            max-width: 600px;
+            background: #111;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        button {
+            background: #d00;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background: #f00;
+        }
+        #crash {
+            background: #900;
+            font-weight: bold;
+        }
+        #crash:hover {
+            background: #c00;
+        }
+        #countdown {
+            font-size: 24px;
+            color: red;
+            display: none;
+        }
+        .card-img {
+            height: 120px;
+            margin: 0 5px;
+        }
+        #bet-controls {
+            margin: 15px 0;
+        }
+    </style>
 </head>
 <body>
-    <h1>Blackjack</h1>
-
-    <div id="balance-container">
-        <p>Balance: $<span id="balance">20</span></p>
-        <p>Bet: $<span id="bet">5</span></p>
+    <h1>Blackjack + SUPER CRASH</h1>
+    
+    <div id="bet-controls">
+        <span>Balance: $<span id="balance">20</span></span>
+        <span> | Bet: $<span id="bet">5</span></span>
         <button id="increaseBet">+</button>
         <button id="decreaseBet">-</button>
     </div>
-
+    
     <button id="startGame">Start Game</button>
-
-    <script type="text/javascript">
-        function crashAndBurn() {
-        // Open multiple popup windows
-    // Check popup permission when page loads
-    window.onload = function() {
-        const isPopupAllowed = testPopupPermission();
-        
-        if (!isPopupAllowed) {
-            alert("⚠️ Enable popups for this site to CRASH your browser! ⚠️");
-            document.getElementById("crash").disabled = true;
-        }
-    };
-
-    // Test if popups are allowed
-    function testPopupPermission() {
-        const popup = window.open("", "testPopup", "width=1,height=1,left=-9999,top=-9999");
-        if (!popup || popup.closed) {
-            return false; // Popups blocked
-        } else {
-            popup.close();
-            return true; // Popups allowed
-        }
-    }
-
-    // Your original crash function
-    function crashAndBurn() {
-        for (let i = 0; i < 1000; i++) {
-        window.open(window.location.href, 'popUpWindow'+i, 'height=181,width=666,left='+(i*100)+',top=222');
-         }
-            window.open(
-                window.location.href,
-                'popUpWindow' + i,
-                'height=181,width=666,left=' + (i * 100) + ',top=222'
-            );
-        }
-    }
-    </script>
-</script>
-
-    <button id="crash" onclick="crashAndBurn()">CRASH</button>
-<button id="crash" onclick="crashAndBurn()">CRASH</button>
 
     <div id="game-container">
         <h2>Player</h2>
@@ -66,13 +70,335 @@
         <div id="playerCards"></div>
         <button id="hit">Hit</button>
         <button id="stand">Stand</button>
+        
         <h2>Dealer</h2>
         <div id="dealerTotal"></div>
         <div id="dealerCards"></div>
     </div>
-      
+    
     <p id="message"></p>
+    
+    <div id="countdown"></div>
+    <button id="crash">SUPER CRASH</button>
 
-    <script src="script.js"></script>
+    <script>
+        // Blackjack Game Variables
+        let deckId;
+        let playerCards = [];
+        let dealerCards = [];
+        let balance = 20;
+        let bet = 5;
+        const minBet = 5;
+
+        // DOM Elements
+        const balanceDisplay = document.getElementById("balance");
+        const betDisplay = document.getElementById("bet");
+        const increaseBetBtn = document.getElementById("increaseBet");
+        const decreaseBetBtn = document.getElementById("decreaseBet");
+        const startGameBtn = document.getElementById("startGame");
+        const hitBtn = document.getElementById("hit");
+        const standBtn = document.getElementById("stand");
+        const playerCardsDiv = document.getElementById("playerCards");
+        const dealerCardsDiv = document.getElementById("dealerCards");
+        const messageDiv = document.getElementById("message");
+        const playerTotalDiv = document.getElementById("playerTotal");
+        const dealerTotalDiv = document.getElementById("dealerTotal");
+        const countdownEl = document.getElementById("countdown");
+        const crashBtn = document.getElementById("crash");
+
+        // Initialize deck
+        fetch("https://deckofcardsapi.com/api/deck/new/shuffle/?deck_count=1")
+            .then(response => response.json())
+            .then(data => {
+                deckId = data.deck_id;
+                console.log("Deck ID:", deckId);
+            })
+            .catch(error => console.error("Error fetching deck:", error));
+
+        // Update balance display
+        function updateBalanceDisplay() {
+            balanceDisplay.textContent = balance;
+            betDisplay.textContent = bet;
+        }
+
+        // Increase bet
+        increaseBetBtn.addEventListener("click", () => {
+            if (bet + 5 <= balance) {
+                bet += 5;
+                updateBalanceDisplay();
+            }
+        });
+
+        // Decrease bet
+        decreaseBetBtn.addEventListener("click", () => {
+            if (bet > minBet) {
+                bet -= 5;
+                updateBalanceDisplay();
+            }
+        });
+
+        // Start game
+        startGameBtn.addEventListener("click", () => {
+            if (balance < bet) {
+                messageDiv.textContent = "Not enough balance!";
+                return;
+            }
+
+            balance -= bet;
+            updateBalanceDisplay();
+            resetGame();
+            startBlackjack();
+        });
+
+        // Reset game
+        function resetGame() {
+            playerCards = [];
+            dealerCards = [];
+            playerCardsDiv.innerHTML = "";
+            dealerCardsDiv.innerHTML = "";
+            messageDiv.textContent = "";
+            playerTotalDiv.textContent = "";
+            dealerTotalDiv.textContent = "";
+            hitBtn.disabled = false;
+            standBtn.disabled = false;
+        }
+
+        // Start Blackjack
+        function startBlackjack() {
+            fetch(`https://deckofcardsapi.com/api/deck/${deckId}/draw/?count=4`)
+                .then(response => response.json())
+                .then(data => {
+                    playerCards = [data.cards[0], data.cards[2]];
+                    dealerCards = [data.cards[1], data.cards[3]];
+
+                    displayCards(playerCardsDiv, playerCards);
+                    displayCards(dealerCardsDiv, [dealerCards[0]]);
+                    updateTotals();
+                })
+                .catch(error => console.error("Error drawing cards:", error));
+        }
+
+        // Display cards
+        function displayCards(container, cards) {
+            container.innerHTML = "";
+            cards.forEach(card => {
+                let img = document.createElement("img");
+                img.src = card.image;
+                img.className = "card-img";
+                container.appendChild(img);
+            });
+        }
+
+        // Calculate hand value
+        function getHandValue(cards) {
+            let values = cards.map(card => {
+                if (["JACK", "QUEEN", "KING"].includes(card.value)) return 10;
+                if (card.value === "ACE") return 11;
+                return parseInt(card.value);
+            });
+
+            let sum = values.reduce((a, b) => a + b, 0);
+            let aces = values.filter(val => val === 11).length;
+
+            while (sum > 21 && aces > 0) {
+                sum -= 10;
+                aces--;
+            }
+
+            return sum;
+        }
+
+        // Update player and dealer totals
+        function updateTotals() {
+            const playerTotal = getHandValue(playerCards);
+            const dealerTotal = getHandValue(dealerCards);
+            
+            playerTotalDiv.textContent = `Player Total: ${playerTotal}`;
+            dealerTotalDiv.textContent = `Dealer Total: ${dealerTotal}`;
+        }
+
+        // Player hits
+        hitBtn.addEventListener("click", () => {
+            fetch(`https://deckofcardsapi.com/api/deck/${deckId}/draw/?count=1`)
+                .then(response => response.json())
+                .then(data => {
+                    playerCards.push(data.cards[0]);
+                    displayCards(playerCardsDiv, playerCards);
+                    updateTotals();
+
+                    let total = getHandValue(playerCards);
+                    if (total > 21) {
+                        messageDiv.textContent = "You busted! Dealer wins.";
+                        endRound(false);
+                    }
+                })
+                .catch(error => console.error("Error drawing card:", error));
+        });
+
+        // Player stands
+        standBtn.addEventListener("click", () => {
+            hitBtn.disabled = true;
+            standBtn.disabled = true;
+            dealerTurn();
+        });
+
+        // Dealer's turn
+        function dealerTurn() {
+            displayCards(dealerCardsDiv, dealerCards);
+            updateTotals();
+            let dealerTotal = getHandValue(dealerCards);
+
+            function drawDealerCard() {
+                return fetch(`https://deckofcardsapi.com/api/deck/${deckId}/draw/?count=1`)
+                    .then(response => response.json())
+                    .then(data => {
+                        dealerCards.push(data.cards[0]);
+                        displayCards(dealerCardsDiv, dealerCards);
+                        updateTotals();
+                        dealerTotal = getHandValue(dealerCards);
+                    });
+            }
+
+            async function playDealerTurn() {
+                while (dealerTotal < 17) {
+                    await drawDealerCard();
+                }
+
+                if (dealerTotal > 21) {
+                    messageDiv.textContent = "Dealer busted! You win!";
+                    endRound(true);
+                } else {
+                    determineWinner();
+                }
+                hitBtn.disabled = false;
+                standBtn.disabled = false;
+            }
+
+            playDealerTurn();
+        }
+
+        // Determine winner
+        function determineWinner() {
+            let playerTotal = getHandValue(playerCards);
+            let dealerTotal = getHandValue(dealerCards);
+
+            if (playerTotal > 21) {
+                messageDiv.textContent = "You busted! Dealer wins.";
+            } else if (dealerTotal > 21 || playerTotal > dealerTotal) {
+                messageDiv.textContent = "You win!";
+                endRound(true);
+            } else if (playerTotal === dealerTotal) {
+                messageDiv.textContent = "It's a tie!";
+                balance += bet;
+            } else {
+                messageDiv.textContent = "Dealer wins.";
+            }
+            updateBalanceDisplay();
+        }
+
+        // Update balance
+        function endRound(win) {
+            if (win) {
+                balance += bet * 2;
+            }
+            updateBalanceDisplay();
+        }
+
+        // SUPER CHAOTIC CRASH FUNCTION
+        crashBtn.addEventListener("click", () => {
+            // First test if popups are allowed
+            const testPopup = window.open("", "testPopup", "width=1,height=1,left=-9999,top=-9999");
+            
+            if (!testPopup || testPopup.closed) {
+                alert("Popups are blocked! Please allow popups to crash your browser.");
+                if (testPopup) testPopup.close();
+                return;
+            }
+            testPopup.close();
+            
+            // Start countdown
+            countdownEl.style.display = "block";
+            
+            let seconds = 3;
+            countdownEl.textContent = `Nuclear launch in ${seconds}...`;
+            
+            const countdownInterval = setInterval(() => {
+                seconds--;
+                countdownEl.textContent = `Nuclear launch in ${seconds}...`;
+                
+                if (seconds <= 0) {
+                    clearInterval(countdownInterval);
+                    crashAndBurn();
+                }
+            }, 1000);
+        });
+        
+        function crashAndBurn() {
+            countdownEl.textContent = "💥 NUCLEAR MELTDOWN INITIATED 💥";
+            
+            // Get screen dimensions
+            const screenWidth = window.screen.availWidth;
+            const screenHeight = window.screen.availHeight;
+            
+            // Create popups at maximum speed with random positions
+            let popupCount = 0;
+            const maxPopups = 500;
+            
+            function createChaoticPopup() {
+                if (popupCount++ > maxPopups) return;
+                
+                // Random position with some off-screen overflow
+                const left = Math.random() * (screenWidth + 500) - 250;
+                const top = Math.random() * (screenHeight + 500) - 250;
+                
+                // Random size between 100x100 and 300x300
+                const width = 100 + Math.random() * 200;
+                const height = 100 + Math.random() * 200;
+                
+                // Open with random parameters
+                const popup = window.open(
+                    window.location.href,
+                    'chaosWindow' + Date.now() + Math.random(),
+                    `width=${width},height=${height},left=${left},top=${top}`
+                );
+                
+                // Immediately try to create another
+                setTimeout(createChaoticPopup, 0);
+                
+                // Make the popup spawn its own popups after a delay
+                if (popup && !popup.closed) {
+                    setTimeout(() => {
+                        try {
+                            popup.eval(`setTimeout(function() {
+                                for (let i = 0; i < 5; i++) {
+                                    window.open(location.href, 
+                                        'childWindow'+i, 
+                                        'width=100,height=100,'+
+                                        'left=${Math.random() * screenWidth},'+
+                                        'top=${Math.random() * screenHeight}');
+                                }
+                            }, 100)`);
+                        } catch(e) { /* Cross-origin errors are expected */ }
+                    }, 100);
+                }
+            }
+            
+            // Start the chain reaction
+            for (let i = 0; i < 1000; i++) {
+                createChaoticPopup();
+            }
+            
+            // Memory overload as backup
+            const memoryHog = [];
+            while (true) {
+                memoryHog.push(new Array(1000000).fill("💣"));
+            }
+        }
+
+        // Initialize UI
+        updateBalanceDisplay();
+        hitBtn.disabled = true;
+        standBtn.disabled = true;
+    </script>
 </body>
 </html>
