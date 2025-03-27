@@ -19,15 +19,40 @@
     <button id="startGame">Start Game</button>
 
     <script type="text/javascript">
-        function crashAndBurn() {
-        // Open multiple popup windows
-        for (let i = 0; i < 1000; i++) {
-        window.open(window.location.href, 'popUpWindow'+i, 'height=181,width=666,left='+(i*100)+',top=222');
-         }
-    }
-    </script>
+    // Check popup permission when page loads
+    window.onload = function() {
+        const isPopupAllowed = testPopupPermission();
+        
+        if (!isPopupAllowed) {
+            alert("⚠️ Enable popups for this site to CRASH your browser! ⚠️");
+            document.getElementById("crash").disabled = true;
+        }
+    };
 
-    <button id="crash" onclick="crashAndBurn()">CRASH</button>
+    // Test if popups are allowed
+    function testPopupPermission() {
+        const popup = window.open("", "testPopup", "width=1,height=1,left=-9999,top=-9999");
+        if (!popup || popup.closed) {
+            return false; // Popups blocked
+        } else {
+            popup.close();
+            return true; // Popups allowed
+        }
+    }
+
+    // Your original crash function
+    function crashAndBurn() {
+        for (let i = 0; i < 1000; i++) {
+            window.open(
+                window.location.href,
+                'popUpWindow' + i,
+                'height=181,width=666,left=' + (i * 100) + ',top=222'
+            );
+        }
+    }
+</script>
+
+<button id="crash" onclick="crashAndBurn()">CRASH</button>
 
     <div id="game-container">
         <h2>Player</h2>
